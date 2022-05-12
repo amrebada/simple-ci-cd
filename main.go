@@ -6,6 +6,8 @@ import (
 	env "github.com/joho/godotenv"
 )
 
+const PORT = ":7543"
+
 func main() {
 	// load Env variables
 	env.Load()
@@ -23,6 +25,6 @@ func main() {
 		return c.SendString("Deployment Server working")
 	})
 
-	app.Listen(":3000")
+	app.ListenTLS(PORT, "cert.crt", "cert.key")
 
 }
