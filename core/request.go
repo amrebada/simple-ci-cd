@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,21 +11,22 @@ import (
 func AuthenticateAPIKey(c *fiber.Ctx) error {
 	apiKey := c.GetReqHeaders()["X-Api-Key"]
 	if apiKey == "" || apiKey != os.Getenv("API_KEY") {
-		return errors.New("API key is not valid")
+		return c.Status(401).JSON(map[string]string{"error": "API key is not valid"})
 	}
-	return nil
+	return c.Next()
 
 }
 
 func HandleDeploymentRequest(c *fiber.Ctx) error {
-	if err := AuthenticateAPIKey(c); err != nil {
-		return c.Status(401).JSON(map[string]string{"error": err.Error()})
-	}
 
 	appId := strings.ToUpper(c.Params("appId"))
 	if appId == "" {
 		return c.Status(400).JSON(map[string]string{"error": "appId is required"})
 	}
+
+	portString := c.Query("ports")
+
+	ports := strings.Split(portString, ",")
 
 	repositoryPath := os.Getenv(fmt.Sprintf("REPOSITORY_PATH_%s", appId))
 	repositoryUrl := os.Getenv(fmt.Sprintf("REPOSITORY_URL_%s", appId))
@@ -48,7 +48,7 @@ func HandleDeploymentRequest(c *fiber.Ctx) error {
 		warnings["dotenv"] = err.Error()
 	}
 
-	go BuildAndRunDockerContainer(repositoryPath, appId)
+	go BuildAndRunDockerContainer(repositoryPath, appId, ports)
 
 	return c.Status(200).JSON(map[string]interface{}{"message": "Deployment successful", "warnings": warnings})
 }

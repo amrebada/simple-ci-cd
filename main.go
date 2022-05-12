@@ -12,14 +12,15 @@ func main() {
 
 	app := fiber.New()
 
-	app.Get("/clean", func(c *fiber.Ctx) error {
+	manage := app.Group("/manage", core.AuthenticateAPIKey)
+	manage.Get("/clean", func(c *fiber.Ctx) error {
 		core.CleanDocker()
 		return c.Status(200).JSON(map[string]string{"message": "Cleaned"})
 	})
-	app.Get("/:appId", core.HandleDeploymentRequest)
+	manage.Get("/:appId", core.HandleDeploymentRequest)
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+		return c.SendString("Deployment Server working")
 	})
 
 	app.Listen(":3000")

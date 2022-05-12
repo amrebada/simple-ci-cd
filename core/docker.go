@@ -42,7 +42,7 @@ func CheckDockerFile(dir string) error {
 	return nil
 }
 
-func BuildAndRunDockerContainer(dir string, appId string) error {
+func BuildAndRunDockerContainer(dir string, appId string, ports []string) error {
 	appId = strings.ToLower(appId)
 	if err := CheckDockerFile(dir); err != nil {
 		return err
@@ -84,14 +84,18 @@ func BuildAndRunDockerContainer(dir string, appId string) error {
 		})
 	}
 
-	exposedPorts, portBindings, _ := nat.ParsePortSpecs([]string{
-		"127.0.0.1:3002:3002",
-	})
+	mappedPorts := []string{}
+
+	for _, port := range ports {
+		mappedPorts = append(mappedPorts, fmt.Sprintf("127.0.0.1:%s:%s", port, port))
+	}
+
+	exposedPorts, portBindings, _ := nat.ParsePortSpecs(mappedPorts)
 	cli.ContainerCreate(context.Background(), &container.Config{
 		Image:        fmt.Sprintf("%s:latest", appId),
 		ExposedPorts: exposedPorts,
 	}, &container.HostConfig{
-		PortBindings: portBindings, // it supposed to be nat.PortMap
+		PortBindings: portBindings,
 	}, nil, nil, appId)
 
 	err = cli.ContainerStart(context.Background(), appId, types.ContainerStartOptions{})
